@@ -35,36 +35,48 @@ async function run() {
     /* =========================
        ✅ CREATE NOTICE (POST)
     ========================== */
-    app.post("/notice", async (req, res) => {
-      try {
-        const notice = req.body;
+   app.post("/notice", async (req, res) => {
+  try {
+    const notice = {
+      ...req.body,
+      createdAt: new Date(),
+    };
 
-        // basic validation
-        if (!notice.title || !notice.noticeType) {
-          return res.status(400).send({
-            success: false,
-            message: "Required fields missing",
-          });
-        }
+    const result = await noticeCollection.insertOne(notice);
 
-        notice.createdAt = new Date();
-
-        const result = await noticeCollection.insertOne(notice);
-
-        res.send({
-          success: true,
-          message: "Notice published successfully",
-          insertedId: result.insertedId,
-        });
-      } catch (error) {
-        console.error(error);
-        res.status(500).send({
-          success: false,
-          message: "Failed to publish notice",
-        });
-      }
+    res.send({
+      success: true,
+      message: "Notice published successfully",
+      insertedId: result.insertedId,
     });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      success: false,
+      message: "Failed to publish notice",
+    });
+  }
+});
 
+app.get("/notice", async (req, res) => {
+  try {
+    const result = await noticeCollection
+      .find()
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.send({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      success: false,
+      data: [],
+    });
+  }
+});
 
 
 
