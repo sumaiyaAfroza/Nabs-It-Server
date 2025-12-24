@@ -74,7 +74,7 @@ app.get("/notice", async (req, res) => {
       filter.targetDepartment = department;
     }
 
-    // Employee (id or name)
+    // (id or name)
     if (employee) {
       filter.$or = [
         { employeeId: employee },
@@ -98,33 +98,6 @@ app.get("/notice", async (req, res) => {
   }
 });
 
-app.get("/notice/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    const notice = await noticeCollection.findOne({
-      _id: new ObjectId(id),
-    });
-
-    if (!notice) {
-      return res.status(404).send({
-        success: false,
-        message: "Notice not found",
-      });
-    }
-
-    res.send({
-      success: true,
-      data: notice,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send({
-      success: false,
-      message: "Failed to fetch notice",
-    });
-  }
-});
 
 
 app.get("/notice/:id", async (req, res) => {
