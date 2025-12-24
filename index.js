@@ -8,7 +8,9 @@ dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-app.use(cors());
+app.use(cors({
+    origin: `https://nabs-it-client-bmmc.vercel.app`
+}));
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@urmi-project.bsifax9.mongodb.net/?appName=urmi-project`;
