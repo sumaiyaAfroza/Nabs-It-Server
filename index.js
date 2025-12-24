@@ -1,14 +1,13 @@
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
-import { MongoClient, ServerApiVersion, ObjectId } from "mongodb";
+import { MongoClient, ServerApiVersion } from "mongodb";
+import { ObjectId } from "mongodb";
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 3000;
-
-// CORS configuration
 app.use(cors({
     origin: [
       "http://localhost:5173",
@@ -16,11 +15,12 @@ app.use(cors({
     ],
     methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-}));
+    credentials: true,  
+  }));
 
-app.options('*', cors()); // Preflight requests
 
+
+// origin: `https://nabs-it-client-bmmc.vercel.app`
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@urmi-project.bsifax9.mongodb.net/?appName=urmi-project`;
@@ -33,77 +33,80 @@ const client = new MongoClient(uri, {
   },
 });
 
+// async function run() {
+//   try {
+//     await client.connect();
 
-app.get("/", (req, res) => {
-  res.send("Notice Server Running ✅");
-});
+    const noticeCollection = client
+      .db("noticeDB")
+      .collection("notices");
 
-async function run() {
-  try {
-    await client.connect();
-    const noticeCollection = client.db("noticeDB").collection("notices");
     console.log("MongoDB Connected Successfully 🚀");
 
-    // Notice routes
-    app.post("/notice", async (req, res) => {
-      try {
-        const notice = {
-          ...req.body,
-          createdAt: new Date(),
-        };
-        const result = await noticeCollection.insertOne(notice);
-        res.send({
-          success: true,
-          message: "Notice published successfully",
-          insertedId: result.insertedId,
-        });
-      } catch (error) {
-        console.error(error);
-        res.status(500).send({
-          success: false,
-          message: "Failed to publish notice",
-        });
-      }
+   app.post("/notice", async (req, res) => {
+  try {
+    const notice = {
+      ...req.body,
+      createdAt: new Date(),
+    };
+
+    const result = await noticeCollection.insertOne(notice);
+
+    res.send({
+      success: true,
+      message: "Notice published successfully",
+      insertedId: result.insertedId,
     });
-
-    app.get("/notice", async (req, res) => {
-      try {
-        const { status, department, employee, date } = req.query;
-        let filter = {};
-
-        if (status === "published") {
-          filter.isPublished = true;
-        } else if (status === "draft") {
-          filter.isPublished = false;
-        }
-        
-        if (department) {
-          filter.targetDepartment = department;
-        }
-
-        if (employee) {
-          filter.$or = [
-            { employeeId: employee },
-            { employeeName: { $regex: employee, $options: "i" } },
-          ];
-        }
-
-        if (date) {
-          filter.publishDate = date;
-        }
-
-        const notices = await noticeCollection
-          .find(filter)
-          .sort({ createdAt: -1 })
-          .toArray();
-
-        res.send({ success: true, data: notices });
-      } catch (error) {
-        res.status(500).send({ success: false, data: [] });
-      }
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      success: false,
+      message: "Failed to publish notice",
     });
+  }
+});
 
-    app.get("/notice/:id", async (req, res) => {
+app.get("/notice", async (req, res) => {
+  try {
+    const { status, department, employee, date } = req.query;
+
+    let filter = {};
+
+    if (status === "published") {
+      filter.isPublished = true;
+    } else if (status === "draft") {
+      filter.isPublished = false;
+    }
+ 
+    if (department) {
+      filter.targetDepartment = department;
+    }
+
+    if (employee) {
+      filter.$or = [
+        { employeeId: employee },
+        { employeeName: { $regex: employee, $options: "i" } },
+      ];
+    }
+
+    if (date) {
+      filter.publishDate = date;
+    }
+
+    const notices = await noticeCollection
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.send({ success: true, data: notices });
+  } catch (error) {
+    res.status(500).send({ success: false, data: [] });
+  }
+});
+
+
+
+app.get("/notice/:id", async (req, res) => {
       try {
         const { id } = req.params;
 
@@ -135,45 +138,50 @@ async function run() {
       }
     });
 
-    app.patch("/notice/:id/status", async (req, res) => {
-      try {
-        const { id } = req.params;
-        const { isPublished } = req.body;
 
-        const result = await noticeCollection.updateOne(
-          { _id: new ObjectId(id) },
-          {
-            $set: {
-              isPublished: isPublished,
-              updatedAt: new Date(),
-            },
-          }
-        );
+app.patch("/notice/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isPublished } = req.body;
 
-        res.send({
-          success: true,
-          message: isPublished ? "Notice Published" : "Notice Unpublished",
-        });
-      } catch (error) {
-        console.error(error);
-        res.status(500).send({
-          success: false,
-          message: "Failed to update notice status",
-        });
+    const result = await noticeCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          isPublished: isPublished,
+          updatedAt: new Date(),
+        },
       }
+    );
+
+    res.send({
+      success: true,
+      message: isPublished ? "Notice Published" : "Notice Unpublished",
     });
-
   } catch (error) {
-    console.log(error);
+    console.error(error);
+    res.status(500).send({
+      success: false,
+      message: "Failed to update notice status",
+    });
   }
-}
-
-run().catch(console.dir);
-
-
-app.listen(port, () => {
-  console.log("Server running on port", port);
 });
 
+//   } catch (error) {
+//     console.log(error);
+//   }
+// }
 
-export default app;
+
+
+
+// run();
+
+/* test route */
+app.get("/", (req, res) => {
+  res.send("Notice Server Running ✅");
+});
+
+app.listen(port, () => {
+  console.log("server ok", port);
+});
