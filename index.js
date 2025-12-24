@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
 import { MongoClient, ServerApiVersion } from "mongodb";
+import { ObjectId } from "mongodb";
 
 dotenv.config();
 
@@ -78,7 +79,33 @@ app.get("/notice", async (req, res) => {
   }
 });
 
+app.patch("/notice/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { isPublished } = req.body;
 
+    const result = await noticeCollection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          isPublished: isPublished,
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    res.send({
+      success: true,
+      message: isPublished ? "Notice Published" : "Notice Unpublished",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      success: false,
+      message: "Failed to update notice status",
+    });
+  }
+});
 
 
 
