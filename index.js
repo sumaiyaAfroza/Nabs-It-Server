@@ -9,8 +9,18 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 app.use(cors({
-    origin: `https://nabs-it-client-bmmc.vercel.app`
-}));
+    origin: [
+      "http://localhost:5173",
+      "https://nabs-it-client-bmmc.vercel.app",
+    ],
+    methods: ["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,  
+  }));
+
+
+
+// origin: `https://nabs-it-client-bmmc.vercel.app`
 app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@urmi-project.bsifax9.mongodb.net/?appName=urmi-project`;
@@ -62,19 +72,16 @@ app.get("/notice", async (req, res) => {
 
     let filter = {};
 
-    // Active / Draft
     if (status === "published") {
       filter.isPublished = true;
     } else if (status === "draft") {
       filter.isPublished = false;
     }
-
-    // Department
+ 
     if (department) {
       filter.targetDepartment = department;
     }
 
-    // (id or name)
     if (employee) {
       filter.$or = [
         { employeeId: employee },
@@ -82,7 +89,6 @@ app.get("/notice", async (req, res) => {
       ];
     }
 
-    // Publish date
     if (date) {
       filter.publishDate = date;
     }
